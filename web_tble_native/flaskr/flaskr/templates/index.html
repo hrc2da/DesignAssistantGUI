@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Online Table Emulation</title>
+	<script src="http://d3js.org/d3.v4.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>window.jQuery || document.write('<script src="{{url_for('static', filename='jquery.js') }}">\x3C/script>')</script>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+<body>
+	<h1 id = 'title'>Online Table Emulation</h1>
+	<h5>[intended viewing size ~75% zoom]</h5>
+
+	<div class="row">
+		<div class="col-8" id = "graph"></div>
+		<div class="col-3" id= "arch_design"></div>
+	</div>
+
+
+	<script type="text/javascript">
+		$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+//<------------------------------------GRAPH----------------------------------------------->
+		//svg variables 
+		var margin = {top: 20, right: 20, bottom: 30, left: 60};
+    	var width = 1200 - margin.left - margin.right;
+    	var height = 800 - margin.top - margin.bottom;
+
+    	//stores points the user inputs as objects 
+    	// {arch: , science: , cost: }
+    	var points = [];
+
+    	var userPrefs = {"avgInstr":0, "favInstr":"", "favOrbit":-1};
+
+    	var curr_arch = [[],[],[],[],[]]
+
+    	//svg for graph
+    	var svg = d3.select("#graph")
+    					.append("svg")
+					    	.attr("width", width + margin.left + margin.right)
+					    	.attr("height", height + margin.top + margin.bottom)
+						.append("g")
+					    	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    	// currently the domains of the graph are hard coded based on EOSS data
+    	var xScale = d3.scaleLinear().domain([0, 0.4]).range([0, width])
+    	var yScale = d3.scaleLinear().domain([0,10000]).range([height, 0])
+
+
+    	//define axis for graph
+    	  svg.append("g")
+		      .attr("transform", "translate(0," + height + ")")
+		      .call(d3.axisBottom(xScale))
+		  .append("text")
+		    .attr("class", "label")
+		    .attr("x", width)
+		    .attr("y", -6)
+		    .style("text-anchor", "end")
+		    .text("Science Benefit");
+
+		// y-axis
+		  svg.append("g")
+		      .call(d3.axisLeft(yScale))
+		  .append("text")
+		    .attr("class", "label")
+		    .attr("transform", "rotate(-90)")
+		    .attr("y", 6)
+		    .attr("dy", ".71em")
+		    .style("text-anchor", "end")
+		    .text("Cost");
+
+//<------------------------------------END GRAPH------------------------------------------->
+//
+//<------------------------------------Arch_design----------------------------------------->
+		//svg for arch design
+		var design_marg = {top: 20, right: 20, bottom: 20, left: 20}
+		var design_w = 350;
+		var design_h = 620;
+    	var svg_design = d3.select("#arch_design")
+    					.append("svg")
+    						.attr("id","design_svg")
+					    	.attr("width", design_w)
+					    	.attr("height", design_h)
+
+		//setting up architecture design
+
+		//adding rectangles
+		var gap = 7;
+		var rect_h = 75
+		for(var i = 0; i < 5; i ++){
+			svg_design.append("rect")
+				.attr("id","orbit_"+(i+1))
+				.attr("class", "orbit_rect")
+				.attr("x",10)
+				.attr("y",30 + (i*(rect_h + gap)))
+				.attr("width", design_w - 20)
+				.attr("height", rect_h)
+				.style("fill", i%2 == 0 ? "#94c0e4": "#cee1ef");
+			svg_design.append("text")
+				.attr("class", "orbit_tag")
+				.text("Orbit " + (i+1))
+				.attr("x",15)
+				.attr("y",50 + (i*(rect_h + gap)));
+		}
+
+
+		//adding titles
+		svg_design.append("text")
+			.text("Architecture Design")
+			.attr("x", 10)
+			.attr("y", 20)
+			.style("font-weight","lighter");
+
+//<---------------------------------------end arch design ------------------------------------->
+//<---------------------------------------instruments ----------------------------------------->
+
+		var instrument_margins = {top: 10, right: 10, bottom: 10, left: 10};
+		var intstrument_panel_w = 350;
+		var intstrument_panel_h = 200;
+		var svg_instruments = d3.select("#design_svg")
+								.append("g")
+									.attr("id", "instrument_svg")
+									.attr("x",0)
+									.attr("y",250)
+									.attr("width",intstrument_panel_w)
+									.attr("height",intstrument_panel_h);
+
+		var g_instruments = d3.select("#instrument_svg")
+								.append("rect")
+								.attr("x",0)
+								.attr("y",450)
+								.attr("width",intstrument_panel_w)
+								.attr("height",intstrument_panel_h)
+								.style("fill","None");
+
+		//adding instrument icons
+		var instruments = [['A','B','C','D','E','F'],
+							['G','H','I','J','K','L']];
+
+		// FIGURE OUT HOW TO GET THE TEXT INTO RECTS + MOVE ALL THESE ELMS TO THE ABOVE SVG SO YOU CAN DRAG + DROP
+		var icon_h = 40;
+		var x_gap = 5;
+		var y_gap = 10;
+		for(var i = 0; i<2; i++){
+			for(var j=0; j<6; j++){ 
+				svg_instruments.append("rect")
+								.attr("x", 10 + j*(icon_h + x_gap))
+								.attr("y", 450+40 + i*(icon_h + y_gap))
+								.attr("width", icon_h)
+								.attr("height", icon_h)
+								.style("fill","#f7bb06")
+								.attr("class", "instrument_icon")
+								.attr("id","instrument_"+instruments[i][j]);
+			}
+		}
+
+		//dragging the rectangles
+		var rect = svg_instruments.selectAll('rect');
+		rect.call(d3.drag()
+			.on("start", dragstarted)
+			.on("drag", dragged)
+			.on("end", dragended));
+
+		function dragstarted(d) {
+		  d3.select(this).raise().classed("active", true);
+		}
+
+		function dragged(d) {
+		  d3.select(this).attr("x", this.x = d3.event.x).attr("y", this.y = d3.event.y);
+		}
+
+		function dragended(d) {
+		  d3.select(this).classed("active", false);
+		  calcArch();
+		}
+
+		function calcArch(){
+			curr_arch = [[],[],[],[],[]]
+			var instruments = d3.selectAll(".instrument_icon")._groups[0];
+			for(instrument of instruments){
+				instrument_tag = instrument.id.charAt(instrument.id.length-1);
+				var orbit = getOrbit(instrument);
+				if(orbit>0){
+					curr_arch[orbit-1].push(instrument_tag);
+				}
+			}
+
+	      $.getJSON($SCRIPT_ROOT + '/_evaluate', {
+	        bitString: arch_to_bs(curr_arch),
+	      }, function(data) {
+	        console.log(data);
+	        plotPoint(data);
+	      });
+		}
+
+
+		function arch_to_bs(arch){
+			bitString = ""
+			for (orbit of arch){
+				orbit_bs = "000000000000"
+				for (instrument of orbit){
+					i = instrument.charCodeAt("0") - 65
+					orbit_bs = setCharAt(orbit_bs, i, "1")
+				}
+				bitString+=orbit_bs
+			}		
+			return bitString
+		}
+
+		function plotPoint(point){
+			var plot = d3.select("#graph svg");
+			plot.append("circle")
+				.attr("cx", xScale(point["science"]) + margin.left)
+				.attr("cy", yScale(point["cost"]) + margin.bottom)
+				.attr("r", 3)
+				.style("fill", "red")
+		}
+
+		// returns 0 if the rectangle is in no orbit, or the orbit number if it is in orbits 1-5
+		function getOrbit(rect){
+			var rect_attrs = rect.attributes;
+			var rect_x = Number(rect_attrs.x.value);
+			var rect_y = Number(rect_attrs.y.value);
+			var rect_w = Number(rect_attrs.width.value);
+			var rect_h = Number(rect_attrs.height.value);
+			var mid_x = rect_x + rect_w/2;
+			var mid_y = rect_y + rect_h/2;
+
+			orbits = d3.selectAll(".orbit_rect")._groups[0];
+			for(var i = 0; i < orbits.length; i++){
+				var orbit_attrs = orbits[i].attributes;
+				var orbit_x = Number(orbit_attrs.x.value);
+				var orbit_y =Number(orbit_attrs.y.value);
+				var orbit_w =Number(orbit_attrs.width.value);
+				var orbit_h =Number(orbit_attrs.height.value);
+
+				if(mid_x > orbit_x && mid_x < orbit_x + orbit_w 
+					&& mid_y > orbit_y && mid_y < orbit_y + orbit_h ){
+					return i+1;
+				}
+			}
+			return 0;
+		}
+
+		function setCharAt(str,index,chr) {
+		    if(index > str.length-1) return str;
+		    return str.substr(0,index) + chr + str.substr(index+1);
+		}
+
+
+		//adding titles
+		svg_instruments.append("text")
+			.text("Instruments")
+			.attr("x", 10)
+			.attr("y", 450+ 20)
+			.style("font-weight","lighter");
+
+
+
+	</script>
+</body>
+</html>

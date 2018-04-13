@@ -1,0 +1,16 @@
+certifi==2018.1.18
+chardet==3.0.4
+click==6.7
+cs==2.1.6
+Flask==0.12.2
+-e git+https://github.com/amritkwatra/web_table.git@80d64f156f146dff236c5272c6e46e8451cdd907#egg=flaskr&subdirectory=flaskr
+gunicorn==19.7.1
+idna==2.6
+itsdangerous==0.24
+Jinja2==2.10
+jsonify==0.5
+MarkupSafe==1.0
+numpy==1.14.2
+requests==2.18.4
+urllib3==1.22
+Werkzeug==0.14.1
