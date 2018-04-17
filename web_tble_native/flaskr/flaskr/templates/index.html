@@ -64,9 +64,26 @@
 				 return Object.assign({configuration:bitString},data);
 			 });
 	 }
+	 var CURR_STRATEGY = -1; //negative is constrain, positive is antagonize
+	 function toggleStrategy(){
+		 if(CURR_STRATEGY< 0){
+			 CURR_STRATEGY = 1;
+		 }
+		 else{
+			 CURR_STRATEGY = -1;
+		 }
+	 }
+	 function getStrategy(){
+		 if(CURR_STRATEGY< 0){
+			 return "Strategy: Appease";
+		 }
+		 else{
+			 return "Strategy: Antagonize";
+		 }
+	 }
 
-	 calcLocalPts("100010011000001000101000110010100110011000111010100111000101",5.3,[1,1,-1],10)
-	 .then((res)=>console.log(res));
+	 // calcLocalPts("100010011000001000101000110010100110011000111010100111000101",5.3,[1,1,-1],10)
+	 // .then((res)=>console.log(res));
 	 //calcArchBS("100010011000001000101000110010100110011000111010100111000101")
 	 //.then((result)=>{console.log("RESULT",result)});
 	 function computeFitness(variables,weights){
@@ -80,6 +97,10 @@
 		 }
 		 return fitness;
 	 }
+
+
+	 //this is async!
+
 	</script>
 
 	<script type="text/javascript">
@@ -92,7 +113,7 @@
 
     	//stores points the user inputs as objects
     	// {arch: , science: , cost: }
-    	var points = [{'cost': 250.88035225693343, 'estimation': false, 'science': 0.0144620975}];
+    	var points = [];
 
     	var generatedPoints = []
 
@@ -141,7 +162,7 @@
 		//svg for arch design
 		var design_marg = {top: 20, right: 20, bottom: 20, left: 20}
 		var design_w = 350;
-		var design_h = 620;
+		var design_h = 720;
     	var svg_design = d3.select("#arch_design")
     					.append("svg")
     						.attr("id","design_svg")
@@ -177,6 +198,62 @@
 			.attr("y", 20)
 			.style("font-weight","lighter");
 
+
+			var status_panel = d3.select("#design_svg")
+				.append("g")
+					.attr("id", "status_panel")
+					.attr("x",0)
+					.attr("y",450+170)
+					.attr("width",350)
+					.attr("height",100)
+					.on("click",()=>{
+							toggleStrategy();
+							console.log(CURR_STRATEGY);
+							d3.select("#toggle_agent").style("fill","gray");
+							d3.select("#agent_strategy").text(getStrategy());
+							setTimeout(()=>{
+								d3.select("#toggle_agent").style("fill","white");
+							},200);
+					});
+			status_panel.append("rect")
+				.attr("id","status_panel_cont")
+				.attr("x",0)
+				.attr("y",450+170)
+				.attr("width",350)
+				.attr("height",100)
+				.style("fill","#94c0e4");
+			status_panel.append("rect")
+				.attr("id","toggle_agent")
+				.attr("x",20)
+				.attr("y",450+180)
+				.attr("width",100)
+				.attr("height",40)
+				.style("fill","white");
+			status_panel.append("text")
+				.attr("x",25)
+				.attr("y",450+205)
+				.style("cursor","pointer")
+				.text("Toggle Agent");
+			status_panel.append("text")
+				.attr("id","agent_strategy")
+				.attr("x", 20)
+				.attr("y",450+245)
+				.style("cursor","arrow")
+				.text(getStrategy());
+				status_panel.append("text")
+					.attr("id","agent_blocks_label")
+					.attr("x", 160)
+					.attr("y",450+205)
+					.style("cursor","arrow")
+					.text("Agent Blocks/Config:");
+				status_panel.append("text")
+						.attr("id","agent_blocks")
+						.attr("x", 195)
+						.attr("y",450+245)
+						.style("cursor","arrow")
+						.style("font-size", "34px")
+						.text('0.00');
+
 //<---------------------------------------end arch design ------------------------------------->
 //<---------------------------------------instruments ----------------------------------------->
 
@@ -199,6 +276,7 @@
 								.attr("height",intstrument_panel_h)
 								.style("fill","None");
 
+
 		//adding instrument icons
 		var instruments = [['A','B','C','D','E','F'],
 							['G','H','I','J','K','L']];
@@ -209,7 +287,10 @@
 		var y_gap = 10;
 		for(var i = 0; i<2; i++){
 			for(var j=0; j<6; j++){
-				svg_instruments.append("rect")
+				let x_tr = 10 + j*(icon_h + x_gap);
+				let y_tr = 450+40 + i*(icon_h + y_gap);
+				let block = svg_instruments.append("g");
+				block.append("rect")
 								.attr("x", 10 + j*(icon_h + x_gap))
 								.attr("y", 450+40 + i*(icon_h + y_gap))
 								.attr("width", icon_h)
@@ -217,11 +298,17 @@
 								.style("fill","#f7bb06")
 								.attr("class", "instrument_icon")
 								.attr("id","instrument_"+instruments[i][j]);
+				block.append("text")
+								.attr("x", x_tr+icon_h/3.0)
+								.attr("y", y_tr+icon_h/1.5)
+								.style('fill','white')
+								.style('cursor','move')
+								.text((d)=>instruments[i][j]);
 			}
 		}
 
 		//dragging the rectangles
-		var rect = svg_instruments.selectAll('rect');
+		var rect = svg_instruments.selectAll('g');
 		rect.call(d3.drag()
 			.on("start", dragstarted)
 			.on("drag", dragged)
@@ -232,7 +319,8 @@
 		}
 
 		function dragged(d) {
-		  d3.select(this).attr("x", this.x = d3.event.x).attr("y", this.y = d3.event.y);
+		  d3.select(this).select("rect").attr("x", this.x = d3.event.x).attr("y", this.y = d3.event.y);
+			d3.select(this).select("text").attr("x", this.x = d3.event.x+icon_h/3.0).attr("y", this.y = d3.event.y+icon_h/1.5);
 		}
 
 		function dragended(d) {
@@ -250,19 +338,22 @@
 					curr_arch[orbit-1].push(instrument_tag);
 				}
 			}
-
+				let archBs = arch_to_bs(curr_arch);
 	      $.getJSON($SCRIPT_ROOT + '/_evaluate', {
-	        bitString: arch_to_bs(curr_arch),
+	        bitString: archBs,
 	      }, function(data) {
 	        console.log(data);
-	        plotPoint(data);
+					let newPoint = Object.assign({configuration: archBs},data);
+	        plotPoint(newPoint);
 	        updatePrefs(curr_arch);
+
 	      });
 		}
 
-		function updatePrefs(arch){
-			var num_points = points.length;
-			var new_avg = ((num_points-1)*userPrefs.numInstr + 1.1* countInstrs(arch)) / num_points;
+		function updatePrefs(arch,windowSize=5){
+			//var num_points = points.length;
+			//var new_avg = ((num_points-1)*userPrefs.numInstr + 1.1* countInstrs(arch)) / num_points;
+			let new_avg = ((windowSize-1)*userPrefs.numInstr + countInstrs(arch))/windowSize;
 			userPrefs.numInstr = new_avg;
 			console.log("userPrefs", userPrefs)
 		}
@@ -289,11 +380,15 @@
 		function plotPoint(point){
 			points.push(point);
 			var plot = d3.select("#graph svg");
+			let circleColor = "red";
+			if(point.fitness){
+				circleColor = "lightGray"
+			}
 			plot.append("circle")
 				.attr("cx", xScale(point["science"]) + margin.left)
 				.attr("cy", yScale(point["cost"]) + margin.bottom)
 				.attr("r", 3)
-				.style("fill", "red")
+				.style("fill", circleColor)
 		}
 
 		// returns 0 if the rectangle is in no orbit, or the orbit number if it is in orbits 1-5
@@ -336,6 +431,33 @@
 			.style("font-weight","lighter");
 
 
+
+			//setting up and running agent
+			let nextJumpPoint = "";
+			//run the agent
+			let RESTART = true;
+	 	 function runAgent(){
+	 		 if(RESTART && points.length>0){
+				 let jumpPoint = points[0].configuration;
+				 if(nextJumpPoint){
+					 jumpPoint = nextJumpPoint;
+				 }
+	 			 RESTART=false;
+	   		 calcLocalPts(jumpPoint,userPrefs.numInstr,[1e-1,-1e-6,CURR_STRATEGY*1e5],20,3)
+	   	 	.then((selectedConfigs)=>{
+					nextJumpPoint = selectedConfigs[0].configuration;
+					let numBlocks = 0;
+	   	 		selectedConfigs.forEach((c)=>{
+						numBlocks += c.configuration.split("").map(Number).reduce((a,b)=>(a+b),0)
+	   	 			plotPoint(c);
+	   	 		});
+					d3.select("#agent_blocks").text(Number(numBlocks/(1.0*selectedConfigs.length)).toFixed(2));
+					console.log("Average Number of Blocks (Agent):",Number(numBlocks/(1.0*selectedConfigs.length)).toFixed(2));
+	   			RESTART=true;
+	   	 	});
+	 		 }
+	 	 }
+		 setInterval(runAgent,500);
 
 	</script>
 
