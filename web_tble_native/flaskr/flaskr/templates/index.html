@@ -92,9 +92,11 @@
 
     	//stores points the user inputs as objects
     	// {arch: , science: , cost: }
-    	var points = [];
+    	var points = [{'cost': 250.88035225693343, 'estimation': false, 'science': 0.0144620975}];
 
-    	var userPrefs = {"avgInstr":0, "favInstr":"", "favOrbit":-1};
+    	var generatedPoints = []
+
+    	var userPrefs = {'numInstr':0}
 
     	var curr_arch = [[],[],[],[],[]]
 
@@ -254,7 +256,20 @@
 	      }, function(data) {
 	        console.log(data);
 	        plotPoint(data);
+	        updatePrefs(curr_arch);
 	      });
+		}
+
+		function updatePrefs(arch){
+			var num_points = points.length;
+			var new_avg = ((num_points-1)*userPrefs.numInstr + 1.1* countInstrs(arch)) / num_points;
+			userPrefs.numInstr = new_avg;
+			console.log("userPrefs", userPrefs)
+		}
+
+		function countInstrs(arch){
+			arch = arch_to_bs(arch)
+			return( (arch.split("1").length - 1) )
 		}
 
 
@@ -272,6 +287,7 @@
 		}
 
 		function plotPoint(point){
+			points.push(point);
 			var plot = d3.select("#graph svg");
 			plot.append("circle")
 				.attr("cx", xScale(point["science"]) + margin.left)
