@@ -12,5 +12,5 @@ jsonify==0.5
 MarkupSafe==1.0
 numpy==1.14.2
 requests==2.18.4
-urllib3==1.22
+urllib3>=1.23
 Werkzeug==0.14.1
